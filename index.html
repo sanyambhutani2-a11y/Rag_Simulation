@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>RAG Simulator</title>
+
+<style>
+
+body{
+font-family: system-ui;
+background: linear-gradient(135deg,#1f2937,#111827);
+color:white;
+margin:0;
+padding:30px;
+}
+
+.container{
+max-width:1100px;
+margin:auto;
+}
+
+h1{
+text-align:center;
+margin-bottom:30px;
+}
+
+.card{
+background:rgba(255,255,255,0.06);
+backdrop-filter: blur(10px);
+padding:20px;
+border-radius:14px;
+margin-bottom:20px;
+border:1px solid rgba(255,255,255,0.1);
+}
+
+button{
+background:#6366f1;
+border:none;
+padding:10px 16px;
+border-radius:8px;
+color:white;
+cursor:pointer;
+margin-top:10px;
+}
+
+button:hover{
+background:#4f46e5;
+}
+
+textarea,input{
+width:100%;
+padding:10px;
+margin-top:10px;
+border-radius:8px;
+border:none;
+}
+
+.step-title{
+font-weight:bold;
+margin-bottom:10px;
+}
+
+.chunk{
+background:#1f2937;
+padding:8px;
+border-radius:6px;
+margin:5px 0;
+}
+
+.embedding{
+font-size:12px;
+color:#9ca3af;
+}
+
+.result{
+background:#0f172a;
+padding:10px;
+border-radius:8px;
+margin-top:10px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>RAG Simulator</h1>
+
+<div class="card">
+<div class="step-title">Step 1: Knowledge Base</div>
+<textarea id="kb" rows="4">
+RAG stands for Retrieval Augmented Generation. 
+It improves LLM answers by retrieving relevant context from external data sources. 
+Vector embeddings are used to store and search documents based on semantic similarity.
+</textarea>
+
+<button onclick="chunkText()">Create Chunks</button>
+
+<div id="chunks"></div>
+</div>
+
+<div class="card">
+<div class="step-title">Step 2: Create Embeddings</div>
+<button onclick="createEmbeddings()">Generate Embeddings</button>
+
+<div id="embeddings"></div>
+</div>
+
+<div class="card">
+<div class="step-title">Step 3: User Query</div>
+
+<input id="query" placeholder="Ask a question..." />
+
+<button onclick="search()">Run Retrieval</button>
+
+<div id="queryEmbedding"></div>
+
+<div id="searchResults"></div>
+
+</div>
+
+<div class="card">
+<div class="step-title">Step 4: LLM Response (Simulated)</div>
+
+<div id="answer" class="result"></div>
+
+</div>
+
+</div>
+
+<script>
+
+let chunks=[]
+let vectors=[]
+
+function chunkText(){
+
+let text=document.getElementById("kb").value
+
+chunks=text.split(".").map(x=>x.trim()).filter(x=>x.length>0)
+
+let html=""
+
+chunks.forEach((c,i)=>{
+html+=`<div class="chunk">Chunk ${i+1}: ${c}</div>`
+})
+
+document.getElementById("chunks").innerHTML=html
+
+}
+
+function fakeEmbedding(text){
+
+let vec=[]
+
+for(let i=0;i<5;i++){
+
+vec.push(Math.random().toFixed(2))
+
+}
+
+return vec
+
+}
+
+function createEmbeddings(){
+
+vectors=[]
+
+let html=""
+
+chunks.forEach((chunk,i)=>{
+
+let vec=fakeEmbedding(chunk)
+
+vectors.push(vec)
+
+html+=`<div class="chunk">
+Chunk ${i+1}
+<div class="embedding">[${vec.join(", ")}]</div>
+</div>`
+
+})
+
+document.getElementById("embeddings").innerHTML=html
+
+}
+
+function cosine(a,b){
+
+let dot=0
+let magA=0
+let magB=0
+
+for(let i=0;i<a.length;i++){
+
+dot+=a[i]*b[i]
+magA+=a[i]*a[i]
+magB+=b[i]*b[i]
+
+}
+
+magA=Math.sqrt(magA)
+magB=Math.sqrt(magB)
+
+return dot/(magA*magB)
+
+}
+
+function search(){
+
+let query=document.getElementById("query").value
+
+let qVec=fakeEmbedding(query)
+
+document.getElementById("queryEmbedding").innerHTML=
+"Query Embedding: ["+qVec.join(", ")+"]"
+
+let scores=[]
+
+vectors.forEach((vec,i)=>{
+
+let score=cosine(qVec,vec)
+
+scores.push({chunk:chunks[i],score:score})
+
+})
+
+scores.sort((a,b)=>b.score-a.score)
+
+let top=scores.slice(0,3)
+
+let html="<b>Top Retrieved Chunks:</b>"
+
+top.forEach(r=>{
+
+html+=`<div class="chunk">${r.chunk}
+<div class="embedding">Similarity: ${r.score.toFixed(2)}</div>
+</div>`
+
+})
+
+document.getElementById("searchResults").innerHTML=html
+
+let context=top.map(x=>x.chunk).join(". ")
+
+let answer="Based on retrieved context: "+context
+
+document.getElementById("answer").innerText=answer
+
+}
+
+</script>
+
+</body>
+</html>
+```
